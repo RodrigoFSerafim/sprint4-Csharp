@@ -53,7 +53,7 @@ A aplicação utiliza **Entity Framework Core** com **SQLite** e oferece **docum
 1. **Clonar o repositório**
 
    ```bash
-   git clone https://github.com/SEU_USUARIO/BetControlAPI.git
+   git clone https://github.com/RodrigoFSerafim/sprint4-Csharp.git
    ```
 
 2. **Verificar a connection string** `"DefaultConnection"` no arquivo `appsettings.json`
@@ -69,7 +69,7 @@ A aplicação utiliza **Entity Framework Core** com **SQLite** e oferece **docum
 4. **Acessar a documentação interativa**
 
    ```
-   http://localhost:5000/swagger
+   http://localhost:5094/swagger
    ```
 
    *(ou na porta exibida no console)*
@@ -148,23 +148,23 @@ A aplicação utiliza **Entity Framework Core** com **SQLite** e oferece **docum
 
 * **Atualização automática do limite:**
 
-  * Ao criar uma `Aposta`, o sistema soma o valor ao `Limite` do mês correspondente (`yyyy-MM`).
-  * Ao atualizar uma `Aposta`, ajusta a diferença no `ValorAtual`.
-  * Ao excluir, subtrai o valor (sem permitir negativo).
+    * Ao criar uma `Aposta`, o sistema soma o valor ao `Limite` do mês correspondente (`yyyy-MM`).
+    * Ao atualizar uma `Aposta`, ajusta a diferença no `ValorAtual`.
+    * Ao excluir, subtrai o valor (sem permitir negativo).
 
 * **Criação de Limite:**
 
-  * Se `MesReferencia` não for informado, assume o mês atual (UTC).
-  * Inicializa `ValorAtual` com a soma das apostas do usuário no mês.
+    * Se `MesReferencia` não for informado, assume o mês atual (UTC).
+    * Inicializa `ValorAtual` com a soma das apostas do usuário no mês.
 
 * **Restrições e índices:**
 
-  * `Email` de `Usuario` é único.
-  * (`UsuarioId`, `MesReferencia`) em `Limite` é único.
+    * `Email` de `Usuario` é único.
+    * (`UsuarioId`, `MesReferencia`) em `Limite` é único.
 
 * **Integração externa (câmbio):**
 
-  * Endpoint `/api/apostas/{id}/valor-usd` consulta `exchangerate.host` e retorna valor convertido de BRL→USD.
+    * Endpoint `/api/apostas/{id}/valor-usd` consulta `exchangerate.host` e retorna valor convertido de BRL→USD.
 
 ---
 
@@ -173,7 +173,7 @@ A aplicação utiliza **Entity Framework Core** com **SQLite** e oferece **docum
 **Criar usuário**
 
 ```bash
-curl -X POST http://localhost:5000/api/usuarios \
+curl -X POST http://localhost:5094/api/usuarios \
   -H "Content-Type: application/json" \
   -d '{
     "nome": "Ana Silva",
@@ -185,7 +185,7 @@ curl -X POST http://localhost:5000/api/usuarios \
 **Criar limite (mês atual)**
 
 ```bash
-curl -X POST http://localhost:5000/api/limites \
+curl -X POST http://localhost:5094/api/limites \
   -H "Content-Type: application/json" \
   -d '{
     "usuarioId": 1,
@@ -196,7 +196,7 @@ curl -X POST http://localhost:5000/api/limites \
 **Criar aposta**
 
 ```bash
-curl -X POST http://localhost:5000/api/apostas \
+curl -X POST http://localhost:5094/api/apostas \
   -H "Content-Type: application/json" \
   -d '{
     "usuarioId": 1,
@@ -210,13 +210,13 @@ curl -X POST http://localhost:5000/api/apostas \
 **Listar usuários que excederam o limite**
 
 ```bash
-curl http://localhost:5000/api/usuarios/excederam-limite/2025-10
+curl http://localhost:5094/api/usuarios/excederam-limite/2025-10
 ```
 
 **Consultar valor em USD de uma aposta**
 
 ```bash
-curl http://localhost:5000/api/apostas/1/valor-usd
+curl http://localhost:5094/api/apostas/1/valor-usd
 ```
 
 ---
@@ -242,32 +242,12 @@ dotnet ef database update
 
 ---
 
-## ☁️ Deploy e produção
-
-* **Configurações por ambiente:**
-
-  * `appsettings.Development.json`
-  * `appsettings.Production.json`
-
-* **Publicação:**
-
-  ```bash
-  dotnet publish -c Release
-  ```
-
-  *(gera binários em `publish/`)*
-
-* **Swagger:**
-  Habilitado por padrão. Em produção, recomenda-se restringir o acesso.
-
----
-
 ## 📝 Notas
 
 * Todas as datas usam **UTC**.
 * Respostas seguem boas práticas HTTP:
 
-  * `400` / `404` em erros de validação ou inexistência
-  * `502` em falhas de serviço externo (exchangerate.host)
+    * `400` / `404` em erros de validação ou inexistência
+    * `502` em falhas de serviço externo (exchangerate.host)
 * Projeto ideal para estudos de **boas práticas REST**, **camadas limpas**, **integrações externas** e **migrações EF Core**.
 
