@@ -1,105 +1,178 @@
-BetControlAPI
+# BetControlAPI
 
-Uma API REST em ASP.NET Core para controle de apostas por usuário, com limites mensais, estatísticas e integração a serviço externo de câmbio. O projeto usa .NET 9, Entity Framework Core e SQLite, e expõe documentação interativa via Swagger.
+**BetControlAPI** é uma API REST desenvolvida em **ASP.NET Core 9** para o **controle de apostas por usuário**, com **limites mensais**, **estatísticas automáticas** e **integração com um serviço externo de câmbio (exchangerate.host)**.
+A aplicação utiliza **Entity Framework Core** com **SQLite** e oferece **documentação interativa via Swagger**.
 
-Sumário
-- Visão geral e arquitetura
-- Requisitos
-- Configuração e execução
-- Modelos de dados
-- Endpoints
-- Regras de negócio e integrações
-- Exemplos de requisições
-- Migrações e banco de dados
-- Deploy e produção
+---
 
-Visão geral e arquitetura
-- Stack: ASP.NET Core Web API (Minimal Hosting), EF Core, SQLite.
-- Camadas principais:
-  - Controllers em `Controllers/` (`Usuarios`, `Apostas`, `Limites`).
-  - Modelos em `Models/` (`Usuario`, `Aposta`, `Limite`).
-  - Contexto de dados em `Data/AppDbContext.cs`.
-- Documentação interativa: Swagger UI habilitado em `/swagger`. A raiz (`/`) redireciona para o Swagger.
+## Integrantes da Equipe
 
-Requisitos
-- .NET SDK 9.0+
-- (Opcional) EF Core CLI para comandos de migração: `dotnet tool install --global dotnet-ef`
+| **Nome**                   | **RM**   |
+|-----------------------------|----------|
+| Rodrigo Fernandes Serafim  | RM550816 |
+| João Antonio Rihan         | RM99656  |
+| Adriano Lopes              | RM98574  |
+| Henrique de Brito          | RM98831  |
+| Rodrigo Lima               | RM98326  |
 
-Configuração e execução
-1) Clonar o repositório e entrar na pasta do projeto.
-2) Verificar a connection string "DefaultConnection" em `appsettings.json` (SQLite padrão: arquivo `betcontrol.db` na raiz).
-3) Restaurar e executar:
-   - `dotnet restore`
-   - `dotnet run`
-4) Acessar a documentação: `http://localhost:5000/swagger` (ou a porta exibida no console).
+---
 
-Modelos de dados
-- Usuario (`Models/Usuario.cs`)
-  - `Id` (int)
-  - `Nome` (string, obrigatório, até 120)
-  - `Email` (string, obrigatório, formato e único, até 160)
-  - `Saldo` (decimal, ≥ 0)
-  - Relacionamentos: muitas `Apostas`, muitos `Limites`
+## ⚙️ Visão geral e arquitetura
 
-- Aposta (`Models/Aposta.cs`)
-  - `Id` (int)
-  - `UsuarioId` (int, FK)
-  - `Valor` (decimal, ≥ 0.01)
-  - `Tipo` (string, obrigatório, até 60) — ex.: futebol, cassino
-  - `Data` (DateTime, default UTC now)
-  - `Ganhou` (bool)
+**Stack principal:**
 
-- Limite (`Models/Limite.cs`)
-  - `Id` (int)
-  - `UsuarioId` (int, FK)
-  - `ValorMaximoMensal` (decimal, ≥ 0)
-  - `ValorAtual` (decimal, ≥ 0)
-  - `MesReferencia` (string, obrigatório, formato `yyyy-MM`)
-  - Índice único composto: (`UsuarioId`, `MesReferencia`)
+* ASP.NET Core Web API (Minimal Hosting)
+* Entity Framework Core (EF Core)
+* SQLite
 
-Endpoints
-- Usuarios (`/api/usuarios`)
-  - GET `/` — listar usuários
-  - GET `/{id}` — obter usuário por id
-  - POST `/` — criar usuário
-  - PUT `/{id}` — atualizar usuário
-  - DELETE `/{id}` — remover usuário
-  - GET `/excederam-limite/{mes}` — usuários cujo gasto no mês (`yyyy-MM`) excedeu o limite
+**Camadas e estrutura:**
 
-- Apostas (`/api/apostas`)
-  - GET `/` — listar apostas
-  - GET `/{id}` — obter aposta por id
-  - POST `/` — criar aposta
-  - PUT `/{id}` — atualizar aposta
-  - DELETE `/{id}` — remover aposta
-  - GET `/media` — valor médio das apostas
-  - GET `/acima-da-media` — apostas com valor acima da média
-  - GET `/{id}/valor-usd` — converte o valor da aposta para USD via serviço externo
+* **Controllers:** `Controllers/`
+  (`UsuariosController`, `ApostasController`, `LimitesController`)
+* **Modelos:** `Models/`
+  (`Usuario`, `Aposta`, `Limite`)
+* **Contexto de dados:** `Data/AppDbContext.cs`
+* **Documentação:** Swagger UI habilitado em `/swagger`
+  *(a rota raiz `/` redireciona automaticamente para o Swagger)*
 
-- Limites (`/api/limites`)
-  - GET `/` — listar limites
-  - GET `/{id}` — obter limite por id
-  - POST `/` — criar limite
-  - PUT `/{id}` — atualizar limite
-  - DELETE `/{id}` — remover limite
+---
 
-Regras de negócio e integrações
-- Atualização automática de `ValorAtual` em `Limite`:
-  - Ao criar uma `Aposta`, o sistema identifica o mês de referência (`yyyy-MM`) a partir de `Aposta.Data` e soma o `Valor` ao `Limite` correspondente do usuário, se existir.
-  - Ao atualizar uma `Aposta` dentro do mesmo mês/usuário, ajusta a diferença no `ValorAtual`.
-  - Ao excluir uma `Aposta`, subtrai seu `Valor` do `ValorAtual` (não deixando negativo).
-- Criação de `Limite`:
-  - Se `MesReferencia` não informado, usa o mês atual em UTC (`yyyy-MM`).
-  - Inicializa `ValorAtual` com a soma das apostas do usuário naquele mês.
-- Restrições e índices:
-  - `Email` de `Usuario` é único.
-  - (`UsuarioId`, `MesReferencia`) de `Limite` é único.
-- Integração externa (câmbio):
-  - Endpoint `/api/apostas/{id}/valor-usd` consulta `exchangerate.host` para obter BRL→USD e retorna o valor convertido.
+## 🧾 Requisitos
 
-Exemplos de requisições (cURL)
-Criar usuário
-```
+* .NET SDK **9.0+**
+* (Opcional) EF Core CLI:
+
+  ```bash
+  dotnet tool install --global dotnet-ef
+  ```
+
+---
+
+## 🚀 Configuração e execução
+
+1. **Clonar o repositório**
+
+   ```bash
+   git clone https://github.com/SEU_USUARIO/BetControlAPI.git
+   ```
+
+2. **Verificar a connection string** `"DefaultConnection"` no arquivo `appsettings.json`
+   *(por padrão, utiliza o banco `betcontrol.db` na raiz do projeto).*
+
+3. **Restaurar dependências e executar**
+
+   ```bash
+   dotnet restore
+   dotnet run
+   ```
+
+4. **Acessar a documentação interativa**
+
+   ```
+   http://localhost:5000/swagger
+   ```
+
+   *(ou na porta exibida no console)*
+
+---
+
+## 🧱 Modelos de dados
+
+### **Usuario**
+
+| Campo    | Tipo                               | Descrição                              |
+| -------- | ---------------------------------- | -------------------------------------- |
+| Id       | int                                | Identificador único                    |
+| Nome     | string                             | Obrigatório, até 120 caracteres        |
+| Email    | string                             | Obrigatório, único, até 160 caracteres |
+| Saldo    | decimal                            | ≥ 0                                    |
+| Relações | muitas `Apostas`, muitos `Limites` |                                        |
+
+### **Aposta**
+
+| Campo     | Tipo     | Descrição                      |
+| --------- | -------- | ------------------------------ |
+| Id        | int      | Identificador                  |
+| UsuarioId | int (FK) | Usuário da aposta              |
+| Valor     | decimal  | ≥ 0.01                         |
+| Tipo      | string   | Obrigatório, até 60 caracteres |
+| Data      | DateTime | Default: UTC Now               |
+| Ganhou    | bool     | Indica se venceu               |
+
+### **Limite**
+
+| Campo             | Tipo                           | Descrição         |
+| ----------------- | ------------------------------ | ----------------- |
+| Id                | int                            | Identificador     |
+| UsuarioId         | int (FK)                       | Usuário do limite |
+| ValorMaximoMensal | decimal                        | ≥ 0               |
+| ValorAtual        | decimal                        | ≥ 0               |
+| MesReferencia     | string                         | `yyyy-MM`         |
+| Índice único      | (`UsuarioId`, `MesReferencia`) |                   |
+
+---
+
+## 🌐 Endpoints principais
+
+### **Usuarios** (`/api/usuarios`)
+
+* `GET /` — lista usuários
+* `GET /{id}` — busca usuário por ID
+* `POST /` — cria novo usuário
+* `PUT /{id}` — atualiza usuário
+* `DELETE /{id}` — remove usuário
+* `GET /excederam-limite/{mes}` — usuários que excederam o limite mensal (`yyyy-MM`)
+
+### **Apostas** (`/api/apostas`)
+
+* `GET /` — lista apostas
+* `GET /{id}` — busca aposta por ID
+* `POST /` — cria nova aposta
+* `PUT /{id}` — atualiza aposta
+* `DELETE /{id}` — remove aposta
+* `GET /media` — calcula valor médio das apostas
+* `GET /acima-da-media` — retorna apostas acima da média
+* `GET /{id}/valor-usd` — converte valor da aposta para USD (via exchangerate.host)
+
+### **Limites** (`/api/limites`)
+
+* `GET /` — lista limites
+* `GET /{id}` — busca limite por ID
+* `POST /` — cria novo limite
+* `PUT /{id}` — atualiza limite
+* `DELETE /{id}` — remove limite
+
+---
+
+## 📊 Regras de negócio e integrações
+
+* **Atualização automática do limite:**
+
+  * Ao criar uma `Aposta`, o sistema soma o valor ao `Limite` do mês correspondente (`yyyy-MM`).
+  * Ao atualizar uma `Aposta`, ajusta a diferença no `ValorAtual`.
+  * Ao excluir, subtrai o valor (sem permitir negativo).
+
+* **Criação de Limite:**
+
+  * Se `MesReferencia` não for informado, assume o mês atual (UTC).
+  * Inicializa `ValorAtual` com a soma das apostas do usuário no mês.
+
+* **Restrições e índices:**
+
+  * `Email` de `Usuario` é único.
+  * (`UsuarioId`, `MesReferencia`) em `Limite` é único.
+
+* **Integração externa (câmbio):**
+
+  * Endpoint `/api/apostas/{id}/valor-usd` consulta `exchangerate.host` e retorna valor convertido de BRL→USD.
+
+---
+
+## 📡 Exemplos de requisições (cURL)
+
+**Criar usuário**
+
+```bash
 curl -X POST http://localhost:5000/api/usuarios \
   -H "Content-Type: application/json" \
   -d '{
@@ -109,8 +182,9 @@ curl -X POST http://localhost:5000/api/usuarios \
   }'
 ```
 
-Criar limite (mês atual por padrão)
-```
+**Criar limite (mês atual)**
+
+```bash
 curl -X POST http://localhost:5000/api/limites \
   -H "Content-Type: application/json" \
   -d '{
@@ -119,8 +193,9 @@ curl -X POST http://localhost:5000/api/limites \
   }'
 ```
 
-Criar aposta
-```
+**Criar aposta**
+
+```bash
 curl -X POST http://localhost:5000/api/apostas \
   -H "Content-Type: application/json" \
   -d '{
@@ -132,30 +207,67 @@ curl -X POST http://localhost:5000/api/apostas \
   }'
 ```
 
-Usuários que excederam o limite (para um mês)
-```
+**Listar usuários que excederam o limite**
+
+```bash
 curl http://localhost:5000/api/usuarios/excederam-limite/2025-10
 ```
 
-Valor em USD de uma aposta
-```
+**Consultar valor em USD de uma aposta**
+
+```bash
 curl http://localhost:5000/api/apostas/1/valor-usd
 ```
 
-Migrações e banco de dados
-- Banco padrão: SQLite (`betcontrol.db`).
-- Migrações existentes em `Data/Migrations/` (ex.: `InitialCreate`). Caso precise recriar/aplicar:
-  - Adicionar nova migração: `dotnet ef migrations add <NomeDaMigracao>`
-  - Atualizar banco local: `dotnet ef database update`
-- Para resetar o banco local, delete `betcontrol.db` e execute `dotnet ef database update` novamente.
+---
 
-Deploy e produção
-- Arquivos de configuração por ambiente: `appsettings.Development.json`, `appsettings.Production.json`.
-- Publicação: pasta `publish/` contém binários gerados; utilize `dotnet publish -c Release` para gerar uma nova versão.
-- O Swagger está habilitado por padrão; em produção, avalie restringir acesso conforme necessidade.
+## 🗃️ Migrações e banco de dados
 
-Notas
-- A API usa UTC para datas de referência de mês.
-- Endpoints retornam 400/404 conforme validações e 502 em falhas de serviços externos.
+* **Banco padrão:** SQLite (`betcontrol.db`)
+* **Migrações:** localizadas em `Data/Migrations/`
 
+**Comandos úteis:**
+
+```bash
+dotnet ef migrations add <NomeDaMigracao>
+dotnet ef database update
+```
+
+**Recriar o banco local:**
+
+```bash
+rm betcontrol.db
+dotnet ef database update
+```
+
+---
+
+## ☁️ Deploy e produção
+
+* **Configurações por ambiente:**
+
+  * `appsettings.Development.json`
+  * `appsettings.Production.json`
+
+* **Publicação:**
+
+  ```bash
+  dotnet publish -c Release
+  ```
+
+  *(gera binários em `publish/`)*
+
+* **Swagger:**
+  Habilitado por padrão. Em produção, recomenda-se restringir o acesso.
+
+---
+
+## 📝 Notas
+
+* Todas as datas usam **UTC**.
+* Respostas seguem boas práticas HTTP:
+
+  * `400` / `404` em erros de validação ou inexistência
+  * `502` em falhas de serviço externo (exchangerate.host)
+* Projeto ideal para estudos de **boas práticas REST**, **camadas limpas**, **integrações externas** e **migrações EF Core**.
 
