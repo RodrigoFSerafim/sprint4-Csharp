@@ -8,17 +8,28 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BetControlAPI.Controllers
 {
+    /// <summary>
+    /// Controller responsável pelas operações CRUD de limites mensais de apostas
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class LimitesController : ControllerBase
     {
         private readonly AppDbContext _db;
 
+        /// <summary>
+        /// Inicializa o controller com o contexto do banco de dados
+        /// </summary>
+        /// <param name="db">Contexto do Entity Framework</param>
         public LimitesController(AppDbContext db)
         {
             _db = db;
         }
 
+        /// <summary>
+        /// Lista todos os limites cadastrados
+        /// </summary>
+        /// <returns>Lista de limites</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Limite>>> GetAll()
         {
@@ -26,6 +37,11 @@ namespace BetControlAPI.Controllers
             return Ok(limites);
         }
 
+        /// <summary>
+        /// Busca um limite específico pelo ID
+        /// </summary>
+        /// <param name="id">ID do limite</param>
+        /// <returns>Dados do limite ou 404 se não encontrado</returns>
         [HttpGet("{id:int}")]
         public async Task<ActionResult<Limite>> GetById(int id)
         {
@@ -34,6 +50,13 @@ namespace BetControlAPI.Controllers
             return Ok(limite);
         }
 
+        /// <summary>
+        /// Cria um novo limite mensal para um usuário
+        /// Se MesReferencia não informado, usa o mês atual
+        /// Inicializa ValorAtual com o somatório das apostas existentes do mês
+        /// </summary>
+        /// <param name="limite">Dados do limite a ser criado</param>
+        /// <returns>Limite criado com ID gerado</returns>
         [HttpPost]
         public async Task<ActionResult<Limite>> Create(Limite limite)
         {
@@ -57,6 +80,12 @@ namespace BetControlAPI.Controllers
             return CreatedAtAction(nameof(GetById), new { id = limite.Id }, limite);
         }
 
+        /// <summary>
+        /// Atualiza um limite existente
+        /// </summary>
+        /// <param name="id">ID do limite a ser atualizado</param>
+        /// <param name="input">Novos dados do limite</param>
+        /// <returns>204 No Content se sucesso, 400 se IDs não coincidem, 404 se não encontrado</returns>
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, Limite input)
         {
@@ -70,6 +99,11 @@ namespace BetControlAPI.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Remove um limite do sistema
+        /// </summary>
+        /// <param name="id">ID do limite a ser removido</param>
+        /// <returns>204 No Content se sucesso, 404 se não encontrado</returns>
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {

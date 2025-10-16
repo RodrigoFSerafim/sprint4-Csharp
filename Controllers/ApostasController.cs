@@ -11,6 +11,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BetControlAPI.Controllers
 {
+    /// <summary>
+    /// Controller responsável pelas operações CRUD de apostas, estatísticas e conversão de moeda
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     public class ApostasController : ControllerBase
@@ -18,12 +21,21 @@ namespace BetControlAPI.Controllers
         private readonly AppDbContext _db;
         private readonly IHttpClientFactory _httpClientFactory;
 
+        /// <summary>
+        /// Inicializa o controller com o contexto do banco e factory de HttpClient
+        /// </summary>
+        /// <param name="db">Contexto do Entity Framework</param>
+        /// <param name="httpClientFactory">Factory para criação de HttpClient</param>
         public ApostasController(AppDbContext db, IHttpClientFactory httpClientFactory)
         {
             _db = db;
             _httpClientFactory = httpClientFactory;
         }
 
+        /// <summary>
+        /// Lista todas as apostas cadastradas
+        /// </summary>
+        /// <returns>Lista de apostas</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Aposta>>> GetAll()
         {
@@ -31,6 +43,11 @@ namespace BetControlAPI.Controllers
             return Ok(apostas);
         }
 
+        /// <summary>
+        /// Busca uma aposta específica pelo ID
+        /// </summary>
+        /// <param name="id">ID da aposta</param>
+        /// <returns>Dados da aposta ou 404 se não encontrada</returns>
         [HttpGet("{id:int}")]
         public async Task<ActionResult<Aposta>> GetById(int id)
         {
@@ -39,6 +56,12 @@ namespace BetControlAPI.Controllers
             return Ok(aposta);
         }
 
+        /// <summary>
+        /// Cria uma nova aposta no sistema
+        /// Atualiza automaticamente o ValorAtual do limite mensal do usuário
+        /// </summary>
+        /// <param name="aposta">Dados da aposta a ser criada</param>
+        /// <returns>Aposta criada com ID gerado</returns>
         [HttpPost]
         public async Task<ActionResult<Aposta>> Create(Aposta aposta)
         {
@@ -59,6 +82,13 @@ namespace BetControlAPI.Controllers
             return CreatedAtAction(nameof(GetById), new { id = aposta.Id }, aposta);
         }
 
+        /// <summary>
+        /// Atualiza uma aposta existente
+        /// Ajusta automaticamente o ValorAtual do limite se o valor ou data mudarem
+        /// </summary>
+        /// <param name="id">ID da aposta a ser atualizada</param>
+        /// <param name="input">Novos dados da aposta</param>
+        /// <returns>204 No Content se sucesso, 400 se IDs não coincidem, 404 se não encontrada</returns>
         [HttpPut("{id:int}")]
         public async Task<IActionResult> Update(int id, Aposta input)
         {
@@ -83,6 +113,12 @@ namespace BetControlAPI.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Remove uma aposta do sistema
+        /// Subtrai automaticamente o valor do ValorAtual do limite mensal
+        /// </summary>
+        /// <param name="id">ID da aposta a ser removida</param>
+        /// <returns>204 No Content se sucesso, 404 se não encontrada</returns>
         [HttpDelete("{id:int}")]
         public async Task<IActionResult> Delete(int id)
         {
@@ -101,7 +137,10 @@ namespace BetControlAPI.Controllers
             return NoContent();
         }
 
-        // Valor médio das apostas
+        /// <summary>
+        /// Calcula o valor médio de todas as apostas
+        /// </summary>
+        /// <returns>Valor médio das apostas ou 0 se não houver apostas</returns>
         [HttpGet("media")]
         public async Task<ActionResult<decimal>> MediaApostas()
         {
@@ -111,7 +150,10 @@ namespace BetControlAPI.Controllers
             return Ok(media);
         }
 
-        // Apostas acima da média
+        /// <summary>
+        /// Lista apostas com valor acima da média geral
+        /// </summary>
+        /// <returns>Lista de apostas acima da média</returns>
         [HttpGet("acima-da-media")]
         public async Task<ActionResult<IEnumerable<Aposta>>> ApostasAcimaDaMedia()
         {
@@ -121,7 +163,12 @@ namespace BetControlAPI.Controllers
             return Ok(acima);
         }
 
-        // Conversão para USD via API pública (exchangerate.host)
+        /// <summary>
+        /// Converte o valor de uma aposta de BRL para USD usando API externa
+        /// Utiliza exchangerate.host (serviço gratuito sem chave de API)
+        /// </summary>
+        /// <param name="id">ID da aposta</param>
+        /// <returns>Valor convertido em USD com cotação atual ou 502 em caso de erro</returns>
         [HttpGet("{id:int}/valor-usd")]
         public async Task<ActionResult<object>> ConverterValorParaUSD(int id)
         {
